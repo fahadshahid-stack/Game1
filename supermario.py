@@ -294,7 +294,9 @@ The next step is to upgrade the game into a full multi-level Mario adventure.
 
 # Replace the Mario Block with Mario Face
 
-Replace the existing `#mario` CSS block with this:
+The error happens because CSS must stay inside the HTML string.
+
+Replace ONLY the existing `#mario` CSS section inside the `html_code = """ ... """` block with this:
 
 ```css
 #mario {
@@ -303,11 +305,37 @@ Replace the existing `#mario` CSS block with this:
     height: 60px;
     left: 100px;
     bottom: 100px;
-    background-image: url('https://upload.wikimedia.org/wikipedia/en/a/a9/MarioNSMBUDeluxe.png');
+    background-image: url("https://upload.wikimedia.org/wikipedia/en/a/a9/MarioNSMBUDeluxe.png");
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
 }
+```
+
+IMPORTANT:
+
+* Do NOT paste CSS outside the triple quotes (`"""`)
+* The CSS must stay inside the HTML string
+* Only replace the old `#mario` style block
+
+Example:
+
+```python
+html_code = """
+<style>
+#mario {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 100px;
+    bottom: 100px;
+    background-image: url(\"https://upload.wikimedia.org/wikipedia/en/a/a9/MarioNSMBUDeluxe.png\");
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+</style>
+"""
 ```
 
 ---
@@ -536,3 +564,5 @@ function gameLoop() {
 
 loadLevel(level);
 gameLoop();
+```
+
