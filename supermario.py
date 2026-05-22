@@ -4,11 +4,12 @@ import streamlit.components.v1 as components
 st.set_page_config(page_title="Super Mario Adventure", layout="wide")
 
 st.title("🍄 Super Mario Adventure")
-st.markdown("Use Arrow Keys to move and SPACE to jump")
+st.markdown("Use ⬅️ ➡️ to move and SPACE to jump")
 
 html_code = """
 <!DOCTYPE html>
 <html>
+
 <head>
 
 <style>
@@ -17,13 +18,12 @@ body {
     margin: 0;
     overflow: hidden;
     font-family: Arial, sans-serif;
-    background: linear-gradient(#5c94fc, #d6f0ff);
 }
 
 #game {
     position: relative;
     width: 100%;
-    height: 650px;
+    height: 700px;
     overflow: hidden;
     border: 5px solid black;
     background: linear-gradient(#5c94fc, #d6f0ff);
@@ -60,8 +60,9 @@ body {
     width: 30px;
     height: 30px;
 
-    background: gold;
     border-radius: 50%;
+
+    background: gold;
     border: 3px solid yellow;
 
     animation: spin 1s linear infinite;
@@ -80,6 +81,16 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.platform {
+    position: absolute;
+
+    background: #a0522d;
+
+    border: 4px solid #5d2f0a;
+
+    border-radius: 10px;
 }
 
 #scoreboard {
@@ -118,14 +129,13 @@ body {
     display: none;
 }
 
-.platform {
+#goal {
     position: absolute;
 
-    background: #a0522d;
+    right: 60px;
+    bottom: 100px;
 
-    border: 4px solid #5d2f0a;
-
-    border-radius: 10px;
+    font-size: 70px;
 }
 
 @keyframes spin {
@@ -154,18 +164,17 @@ body {
 
     <div id="mario">🍄</div>
 
+    <div id="goal">🚩</div>
+
     <div id="ground"></div>
 
 </div>
 
 <script>
 
-const game = document.getElementById('game');
-
 const mario = document.getElementById('mario');
-
+const game = document.getElementById('game');
 const scoreboard = document.getElementById('scoreboard');
-
 const message = document.getElementById('message');
 
 let marioX = 100;
@@ -179,7 +188,7 @@ let jumping = false;
 
 let score = 0;
 
-let level = 0;
+let currentLevel = 0;
 
 let gameOver = false;
 
@@ -189,55 +198,71 @@ const keys = {
 };
 
 let coins = [];
-
 let enemies = [];
-
 let platforms = [];
 
 const levels = [
 
     {
         background: 'linear-gradient(#5c94fc, #d6f0ff)',
-        coins: 5,
-        enemies: 1,
+
         enemySpeed: 2,
 
         platforms: [
-            {x: 300, y: 220, w: 150},
+            {x: 300, y: 220, w: 180},
             {x: 650, y: 320, w: 180}
+        ],
+
+        coins: [
+            {x: 340, y: 280},
+            {x: 720, y: 380},
+            {x: 950, y: 180}
         ]
     },
 
     {
         background: 'linear-gradient(#673ab7, #311b92)',
-        coins: 8,
-        enemies: 2,
-        enemySpeed: 3,
+
+        enemySpeed: 4,
 
         platforms: [
-            {x: 250, y: 220, w: 120},
-            {x: 500, y: 320, w: 160},
-            {x: 900, y: 250, w: 180}
+            {x: 250, y: 220, w: 140},
+            {x: 500, y: 340, w: 160},
+            {x: 850, y: 250, w: 180}
+        ],
+
+        coins: [
+            {x: 280, y: 280},
+            {x: 560, y: 400},
+            {x: 920, y: 310},
+            {x: 1200, y: 180}
         ]
     },
 
     {
         background: 'linear-gradient(#ff9800, #ff5722)',
-        coins: 12,
-        enemies: 4,
-        enemySpeed: 5,
+
+        enemySpeed: 6,
 
         platforms: [
-            {x: 250, y: 220, w: 120},
-            {x: 450, y: 350, w: 150},
-            {x: 800, y: 250, w: 160},
-            {x: 1150, y: 380, w: 180}
+            {x: 250, y: 240, w: 140},
+            {x: 450, y: 380, w: 140},
+            {x: 700, y: 280, w: 140},
+            {x: 1000, y: 420, w: 180}
+        ],
+
+        coins: [
+            {x: 280, y: 300},
+            {x: 480, y: 440},
+            {x: 740, y: 340},
+            {x: 1050, y: 480},
+            {x: 1350, y: 200}
         ]
     }
 
 ];
 
-function clearObjects() {
+function clearLevel() {
 
     coins.forEach(c => c.el.remove());
 
@@ -246,48 +271,10 @@ function clearObjects() {
     platforms.forEach(p => p.el.remove());
 
     coins = [];
+
     enemies = [];
+
     platforms = [];
-}
-
-function createCoin(x, y) {
-
-    const coin = document.createElement('div');
-
-    coin.classList.add('coin');
-
-    coin.style.left = x + 'px';
-
-    coin.style.bottom = y + 'px';
-
-    game.appendChild(coin);
-
-    coins.push({
-        el: coin,
-        x: x,
-        y: y,
-        collected: false
-    });
-}
-
-function createEnemy(x, speed) {
-
-    const enemy = document.createElement('div');
-
-    enemy.classList.add('enemy');
-
-    enemy.innerHTML = '👾';
-
-    enemy.style.left = x + 'px';
-
-    game.appendChild(enemy);
-
-    enemies.push({
-        el: enemy,
-        x: x,
-        dir: -1,
-        speed: speed
-    });
 }
 
 function createPlatform(x, y, width) {
@@ -308,39 +295,71 @@ function createPlatform(x, y, width) {
 
     platforms.push({
         el: platform,
-        x: x,
-        y: y,
+        x,
+        y,
         w: width
     });
 }
 
-function loadLevel(levelIndex) {
+function createCoin(x, y) {
 
-    clearObjects();
+    const coin = document.createElement('div');
 
-    const config = levels[levelIndex];
+    coin.classList.add('coin');
 
-    game.style.background = config.background;
+    coin.style.left = x + 'px';
 
-    for (let i = 0; i < config.coins; i++) {
+    coin.style.bottom = y + 'px';
 
-        createCoin(
-            250 + Math.random() * 1200,
-            180 + Math.random() * 250
-        );
-    }
+    game.appendChild(coin);
 
-    for (let i = 0; i < config.enemies; i++) {
+    coins.push({
+        el: coin,
+        x,
+        y,
+        collected: false
+    });
+}
 
-        createEnemy(
-            500 + Math.random() * 900,
-            config.enemySpeed
-        );
-    }
+function createEnemy(x, speed) {
 
-    config.platforms.forEach(p => {
+    const enemy = document.createElement('div');
+
+    enemy.classList.add('enemy');
+
+    enemy.innerHTML = '👾';
+
+    enemy.style.left = x + 'px';
+
+    game.appendChild(enemy);
+
+    enemies.push({
+        el: enemy,
+        x,
+        dir: -1,
+        speed
+    });
+}
+
+function loadLevel(index) {
+
+    clearLevel();
+
+    const level = levels[index];
+
+    game.style.background = level.background;
+
+    level.platforms.forEach(p => {
         createPlatform(p.x, p.y, p.w);
     });
+
+    level.coins.forEach(c => {
+        createCoin(c.x, c.y);
+    });
+
+    createEnemy(800, level.enemySpeed);
+
+    createEnemy(1200, level.enemySpeed);
 
     marioX = 100;
 
@@ -352,19 +371,15 @@ function loadLevel(levelIndex) {
 function updateScoreboard() {
 
     scoreboard.innerHTML =
-        'Level: ' + (level + 1) +
+        'Level: ' + (currentLevel + 1) +
         ' | Score: ' + score;
 }
 
 function updateMario() {
 
-    if (keys.left) {
-        marioX -= 6;
-    }
+    if (keys.left) marioX -= 6;
 
-    if (keys.right) {
-        marioX += 6;
-    }
+    if (keys.right) marioX += 6;
 
     velocityY -= gravity;
 
@@ -404,18 +419,15 @@ function updateMario() {
     checkCoins();
 
     checkEnemies();
+
+    checkGoal();
 }
 
 function checkCoins() {
 
-    let collected = 0;
-
     coins.forEach(c => {
 
-        if (c.collected) {
-            collected++;
-            return;
-        }
+        if (c.collected) return;
 
         const dx = marioX - c.x;
 
@@ -432,16 +444,9 @@ function checkCoins() {
 
             score += 10;
 
-            collected++;
+            updateScoreboard();
         }
     });
-
-    updateScoreboard();
-
-    if (collected === coins.length) {
-
-        nextLevel();
-    }
 }
 
 function checkEnemies() {
@@ -451,9 +456,10 @@ function checkEnemies() {
         e.x += e.dir * e.speed;
 
         if (
-            e.x < 250 ||
-            e.x > 1400
+            e.x < 200 ||
+            e.x > 1450
         ) {
+
             e.dir *= -1;
         }
 
@@ -461,11 +467,9 @@ function checkEnemies() {
 
         const dx = marioX - e.x;
 
-        const dy = marioY - 100;
-
         if (
             Math.abs(dx) < 45 &&
-            Math.abs(dy) < 45
+            Math.abs(marioY - 100) < 50
         ) {
 
             loseGame();
@@ -473,11 +477,19 @@ function checkEnemies() {
     });
 }
 
+function checkGoal() {
+
+    if (marioX > 1450) {
+
+        nextLevel();
+    }
+}
+
 function nextLevel() {
 
-    level++;
+    currentLevel++;
 
-    if (level >= levels.length) {
+    if (currentLevel >= levels.length) {
 
         winGame();
 
@@ -487,15 +499,15 @@ function nextLevel() {
     message.style.display = 'block';
 
     message.innerHTML =
-        'LEVEL ' + (level + 1);
+        'LEVEL ' + (currentLevel + 1);
 
     setTimeout(() => {
 
         message.style.display = 'none';
 
-        loadLevel(level);
+        loadLevel(currentLevel);
 
-    }, 2000);
+    }, 1500);
 }
 
 function restartGame() {
@@ -510,10 +522,11 @@ function winGame() {
     message.style.display = 'block';
 
     message.innerHTML = `
-        🏆 YOU FINISHED ALL LEVELS
+        🏆 YOU WON THE GAME
         <br><br>
 
-        <button onclick="restartGame()" style="
+        <button onclick="restartGame()"
+        style="
             padding:15px 30px;
             font-size:24px;
             border:none;
@@ -537,7 +550,8 @@ function loseGame() {
         ☠️ GAME OVER
         <br><br>
 
-        <button onclick="restartGame()" style="
+        <button onclick="restartGame()"
+        style="
             padding:15px 30px;
             font-size:24px;
             border:none;
@@ -567,7 +581,7 @@ window.addEventListener('keydown', (e) => {
         !jumping
     ) {
 
-        velocityY = 22;
+        velocityY = 24;
 
         jumping = true;
     }
@@ -594,7 +608,7 @@ function gameLoop() {
     }
 }
 
-loadLevel(level);
+loadLevel(currentLevel);
 
 gameLoop();
 
@@ -604,4 +618,4 @@ gameLoop();
 </html>
 """
 
-components.html(html_code, height=700)
+components.html(html_code, height=720)
