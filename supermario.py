@@ -3,14 +3,12 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Mario Adventure", layout="wide")
 
-st.title("🍄 Super Mario Adventure")
+st.title("🍄 Super Mario Adventure (10 Levels Hard Mode)")
 
 html_code = """
 <!DOCTYPE html>
 <html>
-
 <head>
-
 <style>
 
 body{
@@ -44,12 +42,9 @@ body{
     left:100px;
     bottom:100px;
     font-size:60px;
-
     display:flex;
     align-items:center;
     justify-content:center;
-
-    transition:0.05s linear;
 }
 
 .platform{
@@ -74,7 +69,6 @@ body{
     height:60px;
     font-size:50px;
     bottom:100px;
-
     display:flex;
     align-items:center;
     justify-content:center;
@@ -94,7 +88,6 @@ body{
     color:white;
     font-size:28px;
     font-weight:bold;
-    z-index:999;
     text-shadow:2px 2px 5px black;
 }
 
@@ -107,7 +100,6 @@ body{
     font-size:50px;
     font-weight:bold;
     text-align:center;
-    z-index:999;
     text-shadow:3px 3px 8px black;
     display:none;
 }
@@ -116,45 +108,30 @@ body{
     position:absolute;
     top:10px;
     right:20px;
-
     padding:12px 20px;
-
     font-size:20px;
     font-weight:bold;
-
     border:none;
     border-radius:10px;
-
     background:red;
     color:white;
-
     cursor:pointer;
-
-    z-index:9999;
 }
 
 </style>
-
 </head>
 
 <body>
 
 <div id="game">
 
-<div id="scoreboard">
-Level: 1 | Score: 0
-</div>
+<div id="scoreboard">Level: 1 | Score: 0</div>
 
-<button id="restartBtn" onclick="restartGame()">
-🔄 Restart
-</button>
+<button id="restartBtn" onclick="restartGame()">🔄 Restart</button>
 
 <div id="message"></div>
-
 <div id="mario">🍄</div>
-
 <div id="goal">🚩</div>
-
 <div id="ground"></div>
 
 </div>
@@ -168,411 +145,258 @@ const message=document.getElementById("message");
 
 let marioX=100;
 let marioY=100;
-
 let velocityY=0;
-
 let gravity=0.8;
-
 let jumping=false;
 
 let score=0;
-
 let currentLevel=0;
-
 let gameOver=false;
 
-const keys={
-left:false,
-right:false
-};
+const keys={left:false,right:false};
 
-let coins=[];
-let enemies=[];
-let platforms=[];
+let coins=[], enemies=[], platforms=[];
 
-const levels=[
+/* ===================== 10 LEVELS ===================== */
 
+const levels = [
 {
-background:"linear-gradient(#5c94fc,#d6f0ff)",
-
-enemySpeed:2,
-
-platforms:[
-{x:300,y:220,w:180},
-{x:650,y:320,w:180}
-],
-
-coins:[
-{x:340,y:280},
-{x:720,y:380},
-{x:1100,y:180}
-]
+bg:"linear-gradient(#5c94fc,#d6f0ff)", speed:2, enemies:2, goalX:1450,
+platforms:[{x:300,y:220,w:180},{x:650,y:320,w:180}],
+coins:[{x:340,y:280},{x:720,y:380},{x:1100,y:180}]
 },
-
 {
-background:"linear-gradient(#673ab7,#311b92)",
-
-enemySpeed:4,
-
-platforms:[
-{x:250,y:220,w:140},
-{x:500,y:340,w:160},
-{x:850,y:250,w:180}
-],
-
-coins:[
-{x:280,y:280},
-{x:560,y:400},
-{x:920,y:310},
-{x:1250,y:220}
-]
+bg:"linear-gradient(#673ab7,#311b92)", speed:3, enemies:2, goalX:1550,
+platforms:[{x:250,y:220,w:140},{x:500,y:340,w:160},{x:850,y:250,w:180}],
+coins:[{x:280,y:280},{x:560,y:400},{x:920,y:310}]
 },
-
 {
-background:"linear-gradient(#ff9800,#ff5722)",
-
-enemySpeed:6,
-
-platforms:[
-{x:250,y:240,w:140},
-{x:450,y:380,w:140},
-{x:700,y:280,w:140},
-{x:1000,y:420,w:180}
-],
-
-coins:[
-{x:280,y:300},
-{x:480,y:440},
-{x:740,y:340},
-{x:1050,y:480},
-{x:1350,y:240}
-]
+bg:"linear-gradient(#ff9800,#ff5722)", speed:4, enemies:3, goalX:1650,
+platforms:[{x:250,y:240,w:140},{x:450,y:380,w:140},{x:700,y:280,w:140}],
+coins:[{x:280,y:300},{x:480,y:440},{x:740,y:340}]
+},
+{
+bg:"linear-gradient(#1b5e20,#66bb6a)", speed:5, enemies:3, goalX:1750,
+platforms:[{x:200,y:240,w:160},{x:500,y:300,w:160},{x:800,y:380,w:160}],
+coins:[{x:240,y:300},{x:540,y:360},{x:840,y:440}]
+},
+{
+bg:"linear-gradient(#000,#434343)", speed:6, enemies:3, goalX:1850,
+platforms:[{x:300,y:260,w:180},{x:650,y:340,w:180},{x:1000,y:420,w:180}],
+coins:[{x:340,y:320},{x:700,y:400},{x:1050,y:480}]
+},
+{
+bg:"linear-gradient(#3f51b5,#1a237e)", speed:6, enemies:4, goalX:1950,
+platforms:[{x:200,y:220,w:140},{x:500,y:320,w:140},{x:900,y:360,w:160}],
+coins:[{x:240,y:280},{x:540,y:380},{x:950,y:420}]
+},
+{
+bg:"linear-gradient(#e91e63,#880e4f)", speed:7, enemies:4, goalX:2050,
+platforms:[{x:200,y:260,w:140},{x:500,y:340,w:140},{x:1100,y:380,w:160}],
+coins:[{x:240,y:320},{x:540,y:400},{x:1140,y:440}]
+},
+{
+bg:"linear-gradient(#ffeb3b,#f57f17)", speed:8, enemies:5, goalX:2200,
+platforms:[{x:180,y:240,w:120},{x:420,y:320,w:120},{x:900,y:300,w:120}],
+coins:[{x:220,y:300},{x:460,y:380},{x:940,y:360},{x:1180,y:440}]
+},
+{
+bg:"linear-gradient(#263238,#000)", speed:9, enemies:6, goalX:2350,
+platforms:[{x:200,y:220,w:120},{x:450,y:300,w:120},{x:950,y:260,w:120}],
+coins:[{x:240,y:280},{x:490,y:360},{x:990,y:320}]
+},
+{
+bg:"linear-gradient(#4a148c,#000)", speed:10, enemies:7, goalX:2500,
+platforms:[{x:180,y:240,w:120},{x:400,y:320,w:120},{x:900,y:280,w:120}],
+coins:[{x:220,y:300},{x:440,y:380},{x:880,y:340},{x:1100,y:420}]
 }
-
 ];
 
+/* ===================== GAME SETUP ===================== */
+
 function clearLevel(){
-
 coins.forEach(c=>c.el.remove());
-
 enemies.forEach(e=>e.el.remove());
-
 platforms.forEach(p=>p.el.remove());
-
-coins=[];
-enemies=[];
-platforms=[];
+coins=[]; enemies=[]; platforms=[];
 }
 
 function createPlatform(x,y,w){
-
-const platform=document.createElement("div");
-
-platform.classList.add("platform");
-
-platform.style.left=x+"px";
-platform.style.bottom=y+"px";
-
-platform.style.width=w+"px";
-platform.style.height="20px";
-
-game.appendChild(platform);
-
-platforms.push({
-el:platform,
-x:x,
-y:y,
-w:w
-});
+const p=document.createElement("div");
+p.className="platform";
+p.style.left=x+"px";
+p.style.bottom=y+"px";
+p.style.width=w+"px";
+p.style.height="20px";
+game.appendChild(p);
+platforms.push({el:p,x,y,w});
 }
 
 function createCoin(x,y){
-
-const coin=document.createElement("div");
-
-coin.classList.add("coin");
-
-coin.style.left=x+"px";
-coin.style.bottom=y+"px";
-
-game.appendChild(coin);
-
-coins.push({
-el:coin,
-x:x,
-y:y,
-collected:false
-});
+const c=document.createElement("div");
+c.className="coin";
+c.style.left=x+"px";
+c.style.bottom=y+"px";
+game.appendChild(c);
+coins.push({el:c,x,y,collected:false});
 }
 
 function createEnemy(x,speed){
-
-const enemy=document.createElement("div");
-
-enemy.classList.add("enemy");
-
-enemy.innerHTML="👾";
-
-enemy.style.left=x+"px";
-
-game.appendChild(enemy);
-
-enemies.push({
-el:enemy,
-x:x,
-dir:-1,
-speed:speed
-});
+const e=document.createElement("div");
+e.className="enemy";
+e.innerHTML="👾";
+e.style.left=x+"px";
+game.appendChild(e);
+enemies.push({el:e,x,dir:-1,speed});
 }
 
-function loadLevel(index){
+/* ===================== LEVEL LOAD ===================== */
+
+function loadLevel(i){
 
 clearLevel();
 
-const level=levels[index];
+const lvl=levels[i];
+game.style.background=lvl.bg;
 
-game.style.background=level.background;
+lvl.platforms.forEach(p=>createPlatform(p.x,p.y,p.w));
+lvl.coins.forEach(c=>createCoin(c.x,c.y));
 
-level.platforms.forEach(p=>{
-createPlatform(p.x,p.y,p.w);
-});
-
-level.coins.forEach(c=>{
-createCoin(c.x,c.y);
-});
-
-createEnemy(700,level.enemySpeed);
-
-createEnemy(1200,level.enemySpeed);
+for(let j=0;j<lvl.enemies;j++){
+createEnemy(700 + j*300, lvl.speed);
+}
 
 marioX=100;
 marioY=100;
-
 velocityY=0;
-
-updateScoreboard();
+jumping=false;
+gameOver=false;
 
 message.style.display="block";
+message.innerHTML="LEVEL "+(i+1);
 
-message.innerHTML="LEVEL "+(index+1);
+setTimeout(()=>message.style.display="none",1200);
 
-setTimeout(()=>{
-message.style.display="none";
-},1500);
+updateScoreboard();
 }
 
-function updateScoreboard(){
+/* ===================== LOGIC ===================== */
 
-scoreboard.innerHTML=
-"Level: "+(currentLevel+1)+
-" | Score: "+score;
+function updateScoreboard(){
+scoreboard.innerHTML=`Level: ${currentLevel+1} | Score: ${score}`;
 }
 
 function updateMario(){
 
-if(keys.left){
-marioX-=7;
-}
-
-if(keys.right){
-marioX+=7;
-}
+if(keys.left) marioX-=7;
+if(keys.right) marioX+=7;
 
 velocityY-=gravity;
-
 marioY+=velocityY;
 
 if(marioY<=100){
-
 marioY=100;
-
 velocityY=0;
-
 jumping=false;
 }
-
-platforms.forEach(p=>{
-
-if(
-marioX+50>p.x &&
-marioX<p.x+p.w &&
-marioY>=p.y &&
-marioY<=p.y+25 &&
-velocityY<=0
-){
-
-marioY=p.y+20;
-
-velocityY=0;
-
-jumping=false;
-}
-});
 
 mario.style.left=marioX+"px";
 mario.style.bottom=marioY+"px";
 
 checkCoins();
-
 checkEnemies();
-
 checkGoal();
 }
 
 function checkCoins(){
-
 coins.forEach(c=>{
-
-if(c.collected)return;
-
-const dx=marioX-c.x;
-const dy=marioY-c.y;
-
-if(
-Math.abs(dx)<40 &&
-Math.abs(dy)<40
-){
-
+if(c.collected) return;
+if(Math.abs(marioX-c.x)<40 && Math.abs(marioY-c.y)<40){
 c.collected=true;
-
 c.el.remove();
-
 score+=10;
-
 updateScoreboard();
 }
 });
 }
 
 function checkEnemies(){
-
 enemies.forEach(e=>{
-
 e.x+=e.dir*e.speed;
-
-if(e.x<200 || e.x>1450){
-e.dir*=-1;
-}
-
+if(e.x<200||e.x>1600) e.dir*=-1;
 e.el.style.left=e.x+"px";
 
-const dx=marioX-e.x;
-
-if(
-Math.abs(dx)<45 &&
-Math.abs(marioY-100)<50
-){
+if(Math.abs(marioX-e.x)<45 && Math.abs(marioY-100)<50){
 loseGame();
 }
 });
 }
 
 function allCoinsCollected(){
-
-for(let i=0;i<coins.length;i++){
-
-if(!coins[i].collected){
-return false;
-}
-}
-
-return true;
+return coins.every(c=>c.collected);
 }
 
 function checkGoal(){
-
-if(
-marioX>1450 &&
-allCoinsCollected()
-){
+if(marioX>levels[currentLevel].goalX && allCoinsCollected()){
 nextLevel();
 }
 }
 
 function nextLevel(){
-
 currentLevel++;
-
 if(currentLevel>=levels.length){
-
 winGame();
-
 return;
 }
-
 loadLevel(currentLevel);
 }
 
 function restartGame(){
-
 location.reload();
 }
 
 function winGame(){
-
 gameOver=true;
-
 message.style.display="block";
-
-message.innerHTML=
-"🏆 YOU WON ALL LEVELS!";
+message.innerHTML="🏆 YOU WIN ALL 10 LEVELS!";
 }
 
 function loseGame(){
-
 gameOver=true;
-
 message.style.display="block";
-
-message.innerHTML=
-"☠️ GAME OVER";
+message.innerHTML="☠️ GAME OVER";
 }
+
+/* ===================== CONTROLS ===================== */
 
 window.addEventListener("keydown",(e)=>{
+if(e.code==="ArrowLeft") keys.left=true;
+if(e.code==="ArrowRight") keys.right=true;
 
-if(e.code==="ArrowLeft"){
-keys.left=true;
-}
-
-if(e.code==="ArrowRight"){
-keys.right=true;
-}
-
-if(
-e.code==="Space" &&
-!jumping
-){
-
+if(e.code==="Space" && !jumping){
 velocityY=24;
-
 jumping=true;
 }
 });
 
 window.addEventListener("keyup",(e)=>{
-
-if(e.code==="ArrowLeft"){
-keys.left=false;
-}
-
-if(e.code==="ArrowRight"){
-keys.right=false;
-}
+if(e.code==="ArrowLeft") keys.left=false;
+if(e.code==="ArrowRight") keys.right=false;
 });
 
-function gameLoop(){
+/* ===================== LOOP ===================== */
 
+function loop(){
 if(!gameOver){
-
 updateMario();
-
-requestAnimationFrame(gameLoop);
+requestAnimationFrame(loop);
 }
 }
 
-loadLevel(currentLevel);
+/* START GAME */
 
-gameLoop();
+loadLevel(0);
+loop();
 
 </script>
 
@@ -580,4 +404,4 @@ gameLoop();
 </html>
 """
 
-components.html(html_code,height=730)
+components.html(html_code, height=730)
