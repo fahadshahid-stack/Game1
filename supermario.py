@@ -1,14 +1,14 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Mario Game", layout="wide")
+st.set_page_config(page_title="Super Mario Adventure", layout="wide")
 
 st.title("🍄 Super Mario Adventure")
+st.markdown("Use Arrow Keys to move and SPACE to jump")
 
 html_code = """
 <!DOCTYPE html>
 <html>
-
 <head>
 
 <style>
@@ -16,7 +16,8 @@ html_code = """
 body {
     margin: 0;
     overflow: hidden;
-    font-family: Arial;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(#5c94fc, #d6f0ff);
 }
 
 #game {
@@ -24,22 +25,16 @@ body {
     width: 100%;
     height: 650px;
     overflow: hidden;
-
-    background: linear-gradient(#5c94fc, #d6f0ff);
-
     border: 5px solid black;
-
-    outline: none;
+    background: linear-gradient(#5c94fc, #d6f0ff);
 }
 
 #ground {
     position: absolute;
     bottom: 0;
-
     width: 100%;
     height: 100px;
-
-    background: brown;
+    background: #8B5A2B;
     border-top: 10px solid green;
 }
 
@@ -65,10 +60,11 @@ body {
     width: 30px;
     height: 30px;
 
-    border-radius: 50%;
-
     background: gold;
+    border-radius: 50%;
     border: 3px solid yellow;
+
+    animation: spin 1s linear infinite;
 }
 
 .enemy {
@@ -86,7 +82,7 @@ body {
     justify-content: center;
 }
 
-#score {
+#scoreboard {
     position: absolute;
 
     top: 10px;
@@ -95,6 +91,8 @@ body {
     color: white;
     font-size: 28px;
     font-weight: bold;
+
+    text-shadow: 2px 2px 5px black;
 
     z-index: 999;
 }
@@ -107,13 +105,37 @@ body {
 
     transform: translate(-50%, -50%);
 
-    font-size: 50px;
     color: white;
+    font-size: 50px;
     font-weight: bold;
 
-    display: none;
+    text-align: center;
+
+    text-shadow: 3px 3px 8px black;
 
     z-index: 999;
+
+    display: none;
+}
+
+.platform {
+    position: absolute;
+
+    background: #a0522d;
+
+    border: 4px solid #5d2f0a;
+
+    border-radius: 10px;
+}
+
+@keyframes spin {
+    from {
+        transform: rotateY(0deg);
+    }
+
+    to {
+        transform: rotateY(360deg);
+    }
 }
 
 </style>
@@ -122,9 +144,9 @@ body {
 
 <body>
 
-<div id="game" tabindex="0">
+<div id="game">
 
-    <div id="score">
+    <div id="scoreboard">
         Level: 1 | Score: 0
     </div>
 
@@ -138,13 +160,13 @@ body {
 
 <script>
 
-const game = document.getElementById("game");
+const game = document.getElementById('game');
 
-const mario = document.getElementById("mario");
+const mario = document.getElementById('mario');
 
-const scoreText = document.getElementById("score");
+const scoreboard = document.getElementById('scoreboard');
 
-const message = document.getElementById("message");
+const message = document.getElementById('message');
 
 let marioX = 100;
 let marioY = 100;
@@ -157,28 +179,86 @@ let jumping = false;
 
 let score = 0;
 
-let level = 1;
+let level = 0;
 
 let gameOver = false;
 
-let keys = {
+const keys = {
     left: false,
     right: false
 };
 
 let coins = [];
+
 let enemies = [];
 
-game.focus();
+let platforms = [];
+
+const levels = [
+
+    {
+        background: 'linear-gradient(#5c94fc, #d6f0ff)',
+        coins: 5,
+        enemies: 1,
+        enemySpeed: 2,
+
+        platforms: [
+            {x: 300, y: 220, w: 150},
+            {x: 650, y: 320, w: 180}
+        ]
+    },
+
+    {
+        background: 'linear-gradient(#673ab7, #311b92)',
+        coins: 8,
+        enemies: 2,
+        enemySpeed: 3,
+
+        platforms: [
+            {x: 250, y: 220, w: 120},
+            {x: 500, y: 320, w: 160},
+            {x: 900, y: 250, w: 180}
+        ]
+    },
+
+    {
+        background: 'linear-gradient(#ff9800, #ff5722)',
+        coins: 12,
+        enemies: 4,
+        enemySpeed: 5,
+
+        platforms: [
+            {x: 250, y: 220, w: 120},
+            {x: 450, y: 350, w: 150},
+            {x: 800, y: 250, w: 160},
+            {x: 1150, y: 380, w: 180}
+        ]
+    }
+
+];
+
+function clearObjects() {
+
+    coins.forEach(c => c.el.remove());
+
+    enemies.forEach(e => e.el.remove());
+
+    platforms.forEach(p => p.el.remove());
+
+    coins = [];
+    enemies = [];
+    platforms = [];
+}
 
 function createCoin(x, y) {
 
-    const coin = document.createElement("div");
+    const coin = document.createElement('div');
 
-    coin.classList.add("coin");
+    coin.classList.add('coin');
 
-    coin.style.left = x + "px";
-    coin.style.bottom = y + "px";
+    coin.style.left = x + 'px';
+
+    coin.style.bottom = y + 'px';
 
     game.appendChild(coin);
 
@@ -186,38 +266,95 @@ function createCoin(x, y) {
         el: coin,
         x: x,
         y: y,
-        taken: false
+        collected: false
     });
 }
 
-function createEnemy(x) {
+function createEnemy(x, speed) {
 
-    const enemy = document.createElement("div");
+    const enemy = document.createElement('div');
 
-    enemy.classList.add("enemy");
+    enemy.classList.add('enemy');
 
-    enemy.innerHTML = "👾";
+    enemy.innerHTML = '👾';
 
-    enemy.style.left = x + "px";
+    enemy.style.left = x + 'px';
 
     game.appendChild(enemy);
 
     enemies.push({
         el: enemy,
         x: x,
-        dir: -1
+        dir: -1,
+        speed: speed
     });
 }
 
-for (let i = 0; i < 6; i++) {
+function createPlatform(x, y, width) {
 
-    createCoin(
-        300 + i * 180,
-        200 + (i % 2) * 100
-    );
+    const platform = document.createElement('div');
+
+    platform.classList.add('platform');
+
+    platform.style.left = x + 'px';
+
+    platform.style.bottom = y + 'px';
+
+    platform.style.width = width + 'px';
+
+    platform.style.height = '20px';
+
+    game.appendChild(platform);
+
+    platforms.push({
+        el: platform,
+        x: x,
+        y: y,
+        w: width
+    });
 }
 
-createEnemy(700);
+function loadLevel(levelIndex) {
+
+    clearObjects();
+
+    const config = levels[levelIndex];
+
+    game.style.background = config.background;
+
+    for (let i = 0; i < config.coins; i++) {
+
+        createCoin(
+            250 + Math.random() * 1200,
+            180 + Math.random() * 250
+        );
+    }
+
+    for (let i = 0; i < config.enemies; i++) {
+
+        createEnemy(
+            500 + Math.random() * 900,
+            config.enemySpeed
+        );
+    }
+
+    config.platforms.forEach(p => {
+        createPlatform(p.x, p.y, p.w);
+    });
+
+    marioX = 100;
+
+    marioY = 100;
+
+    updateScoreboard();
+}
+
+function updateScoreboard() {
+
+    scoreboard.innerHTML =
+        'Level: ' + (level + 1) +
+        ' | Score: ' + score;
+}
 
 function updateMario() {
 
@@ -242,8 +379,27 @@ function updateMario() {
         jumping = false;
     }
 
-    mario.style.left = marioX + "px";
-    mario.style.bottom = marioY + "px";
+    platforms.forEach(p => {
+
+        if (
+            marioX + 50 > p.x &&
+            marioX < p.x + p.w &&
+            marioY >= p.y &&
+            marioY <= p.y + 25 &&
+            velocityY <= 0
+        ) {
+
+            marioY = p.y + 20;
+
+            velocityY = 0;
+
+            jumping = false;
+        }
+    });
+
+    mario.style.left = marioX + 'px';
+
+    mario.style.bottom = marioY + 'px';
 
     checkCoins();
 
@@ -256,20 +412,21 @@ function checkCoins() {
 
     coins.forEach(c => {
 
-        if (c.taken) {
+        if (c.collected) {
             collected++;
             return;
         }
 
-        let dx = marioX - c.x;
-        let dy = marioY - c.y;
+        const dx = marioX - c.x;
+
+        const dy = marioY - c.y;
 
         if (
             Math.abs(dx) < 40 &&
             Math.abs(dy) < 40
         ) {
 
-            c.taken = true;
+            c.collected = true;
 
             c.el.remove();
 
@@ -279,13 +436,11 @@ function checkCoins() {
         }
     });
 
-    scoreText.innerHTML =
-        "Level: " + level +
-        " | Score: " + score;
+    updateScoreboard();
 
     if (collected === coins.length) {
 
-        winGame();
+        nextLevel();
     }
 }
 
@@ -293,73 +448,138 @@ function checkEnemies() {
 
     enemies.forEach(e => {
 
-        e.x += e.dir * 3;
+        e.x += e.dir * e.speed;
 
         if (
-            e.x < 400 ||
-            e.x > 1300
+            e.x < 250 ||
+            e.x > 1400
         ) {
-
             e.dir *= -1;
         }
 
-        e.el.style.left = e.x + "px";
+        e.el.style.left = e.x + 'px';
 
-        let dx = marioX - e.x;
+        const dx = marioX - e.x;
 
-        if (Math.abs(dx) < 50) {
+        const dy = marioY - 100;
+
+        if (
+            Math.abs(dx) < 45 &&
+            Math.abs(dy) < 45
+        ) {
 
             loseGame();
         }
     });
 }
 
+function nextLevel() {
+
+    level++;
+
+    if (level >= levels.length) {
+
+        winGame();
+
+        return;
+    }
+
+    message.style.display = 'block';
+
+    message.innerHTML =
+        'LEVEL ' + (level + 1);
+
+    setTimeout(() => {
+
+        message.style.display = 'none';
+
+        loadLevel(level);
+
+    }, 2000);
+}
+
+function restartGame() {
+
+    location.reload();
+}
+
 function winGame() {
 
     gameOver = true;
 
-    message.style.display = "block";
+    message.style.display = 'block';
 
-    message.innerHTML = "🏆 YOU WIN!";
+    message.innerHTML = `
+        🏆 YOU FINISHED ALL LEVELS
+        <br><br>
+
+        <button onclick="restartGame()" style="
+            padding:15px 30px;
+            font-size:24px;
+            border:none;
+            border-radius:10px;
+            background:gold;
+            cursor:pointer;
+            font-weight:bold;
+        ">
+            🔄 Restart Game
+        </button>
+    `;
 }
 
 function loseGame() {
 
     gameOver = true;
 
-    message.style.display = "block";
+    message.style.display = 'block';
 
-    message.innerHTML = "☠️ GAME OVER";
+    message.innerHTML = `
+        ☠️ GAME OVER
+        <br><br>
+
+        <button onclick="restartGame()" style="
+            padding:15px 30px;
+            font-size:24px;
+            border:none;
+            border-radius:10px;
+            background:red;
+            color:white;
+            cursor:pointer;
+            font-weight:bold;
+        ">
+            🔄 Restart Game
+        </button>
+    `;
 }
 
-game.addEventListener("keydown", (e) => {
+window.addEventListener('keydown', (e) => {
 
-    if (e.code === "ArrowLeft") {
+    if (e.code === 'ArrowLeft') {
         keys.left = true;
     }
 
-    if (e.code === "ArrowRight") {
+    if (e.code === 'ArrowRight') {
         keys.right = true;
     }
 
     if (
-        e.code === "Space" &&
+        e.code === 'Space' &&
         !jumping
     ) {
 
-        velocityY = 15;
+        velocityY = 22;
 
         jumping = true;
     }
 });
 
-game.addEventListener("keyup", (e) => {
+window.addEventListener('keyup', (e) => {
 
-    if (e.code === "ArrowLeft") {
+    if (e.code === 'ArrowLeft') {
         keys.left = false;
     }
 
-    if (e.code === "ArrowRight") {
+    if (e.code === 'ArrowRight') {
         keys.right = false;
     }
 });
@@ -374,12 +594,13 @@ function gameLoop() {
     }
 }
 
+loadLevel(level);
+
 gameLoop();
 
 </script>
 
 </body>
-
 </html>
 """
 
