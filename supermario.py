@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Mario Adventure", layout="wide")
 
-st.title("🍄 Super Mario Adventure (10 Levels Hard Mode)")
+st.title("🍄 Super Mario Adventure (Fixed Platforms + 10 Levels)")
 
 html_code = """
 <!DOCTYPE html>
@@ -146,7 +146,7 @@ const message=document.getElementById("message");
 let marioX=100;
 let marioY=100;
 let velocityY=0;
-let gravity=0.8;
+let gravity=0.6;
 let jumping=false;
 
 let score=0;
@@ -157,9 +157,9 @@ const keys={left:false,right:false};
 
 let coins=[], enemies=[], platforms=[];
 
-/* ===================== 10 LEVELS ===================== */
+/* ================= 10 LEVELS ================= */
 
-const levels = [
+const levels=[
 {
 bg:"linear-gradient(#5c94fc,#d6f0ff)", speed:2, enemies:2, goalX:1450,
 platforms:[{x:300,y:220,w:180},{x:650,y:320,w:180}],
@@ -212,7 +212,7 @@ coins:[{x:220,y:300},{x:440,y:380},{x:880,y:340},{x:1100,y:420}]
 }
 ];
 
-/* ===================== GAME SETUP ===================== */
+/* ================= CORE ================= */
 
 function clearLevel(){
 coins.forEach(c=>c.el.remove());
@@ -250,8 +250,6 @@ game.appendChild(e);
 enemies.push({el:e,x,dir:-1,speed});
 }
 
-/* ===================== LEVEL LOAD ===================== */
-
 function loadLevel(i){
 
 clearLevel();
@@ -274,17 +272,16 @@ gameOver=false;
 
 message.style.display="block";
 message.innerHTML="LEVEL "+(i+1);
-
 setTimeout(()=>message.style.display="none",1200);
 
 updateScoreboard();
 }
 
-/* ===================== LOGIC ===================== */
-
 function updateScoreboard(){
 scoreboard.innerHTML=`Level: ${currentLevel+1} | Score: ${score}`;
 }
+
+/* ================= MOVEMENT ================= */
 
 function updateMario(){
 
@@ -300,6 +297,26 @@ velocityY=0;
 jumping=false;
 }
 
+/* ===== FIXED PLATFORM COLLISION ===== */
+platforms.forEach(p=>{
+
+const marioW=60;
+const marioH=70;
+
+const onPlatform =
+marioX + marioW > p.x &&
+marioX < p.x + p.w &&
+marioY >= p.y &&
+marioY <= p.y + 25 &&
+velocityY <= 0;
+
+if(onPlatform){
+marioY = p.y + 20;
+velocityY = 0;
+jumping = false;
+}
+});
+
 mario.style.left=marioX+"px";
 mario.style.bottom=marioY+"px";
 
@@ -307,6 +324,8 @@ checkCoins();
 checkEnemies();
 checkGoal();
 }
+
+/* ================= GAME LOGIC ================= */
 
 function checkCoins(){
 coins.forEach(c=>{
@@ -332,12 +351,12 @@ loseGame();
 });
 }
 
-function allCoinsCollected(){
+function allCoins(){
 return coins.every(c=>c.collected);
 }
 
 function checkGoal(){
-if(marioX>levels[currentLevel].goalX && allCoinsCollected()){
+if(marioX>levels[currentLevel].goalX && allCoins()){
 nextLevel();
 }
 }
@@ -367,14 +386,14 @@ message.style.display="block";
 message.innerHTML="☠️ GAME OVER";
 }
 
-/* ===================== CONTROLS ===================== */
+/* ================= CONTROLS ================= */
 
 window.addEventListener("keydown",(e)=>{
 if(e.code==="ArrowLeft") keys.left=true;
 if(e.code==="ArrowRight") keys.right=true;
 
 if(e.code==="Space" && !jumping){
-velocityY=24;
+velocityY=22;
 jumping=true;
 }
 });
@@ -384,7 +403,7 @@ if(e.code==="ArrowLeft") keys.left=false;
 if(e.code==="ArrowRight") keys.right=false;
 });
 
-/* ===================== LOOP ===================== */
+/* ================= LOOP ================= */
 
 function loop(){
 if(!gameOver){
@@ -392,8 +411,6 @@ updateMario();
 requestAnimationFrame(loop);
 }
 }
-
-/* START GAME */
 
 loadLevel(0);
 loop();
