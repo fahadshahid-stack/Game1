@@ -271,3 +271,268 @@ gameLoop();
 """
 
 components.html(html_code, height=650)
+```
+
+---
+
+## Upgraded Version Ideas Implemented
+
+The next step is to upgrade the game into a full multi-level Mario adventure.
+
+### Improvements Added
+
+* Multiple levels
+* Increasing difficulty
+* Better enemy movement
+* Real Mario face using image sprite
+* Different backgrounds per level
+* Level progression system
+* More coins and obstacles
+* Win screen after final level
+
+---
+
+# Replace the Mario Block with Mario Face
+
+Replace the existing `#mario` CSS block with this:
+
+```css
+#mario {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    left: 100px;
+    bottom: 100px;
+    background-image: url('https://upload.wikimedia.org/wikipedia/en/a/a9/MarioNSMBUDeluxe.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+```
+
+---
+
+# Add Multiple Levels
+
+Replace the JavaScript section with this upgraded version:
+
+```javascript
+const mario = document.getElementById('mario');
+const game = document.getElementById('game');
+const scoreboard = document.getElementById('scoreboard');
+const message = document.getElementById('message');
+
+let marioX = 100;
+let marioY = 100;
+let velocityY = 0;
+let gravity = 0.8;
+let jumping = false;
+let score = 0;
+let level = 1;
+let gameOver = false;
+
+const keys = {
+    left: false,
+    right: false
+};
+
+let coins = [];
+let enemies = [];
+
+const levelConfigs = [
+    {
+        background: 'linear-gradient(#5c94fc, #d6f0ff)',
+        coinCount: 5,
+        enemyCount: 1,
+        enemySpeed: 2
+    },
+    {
+        background: 'linear-gradient(#673ab7, #311b92)',
+        coinCount: 8,
+        enemyCount: 2,
+        enemySpeed: 3
+    },
+    {
+        background: 'linear-gradient(#ff9800, #ff5722)',
+        coinCount: 12,
+        enemyCount: 4,
+        enemySpeed: 5
+    }
+];
+
+function clearLevel() {
+    coins.forEach(c => c.el.remove());
+    enemies.forEach(e => e.el.remove());
+    coins = [];
+    enemies = [];
+}
+
+function loadLevel(levelIndex) {
+    clearLevel();
+
+    const config = levelConfigs[levelIndex];
+
+    game.style.background = config.background;
+
+    for (let i = 0; i < config.coinCount; i++) {
+        createCoin(
+            250 + Math.random() * 1200,
+            150 + Math.random() * 250
+        );
+    }
+
+    for (let i = 0; i < config.enemyCount; i++) {
+        createEnemy(
+            500 + Math.random() * 1000,
+            config.enemySpeed
+        );
+    }
+
+    scoreboard.innerHTML = `Level: ${level + 1} | Score: ${score}`;
+}
+
+function createCoin(x, y) {
+    const coin = document.createElement('div');
+    coin.classList.add('coin');
+    coin.style.left = x + 'px';
+    coin.style.bottom = y + 'px';
+    game.appendChild(coin);
+
+    coins.push({
+        el: coin,
+        x,
+        y,
+        collected: false
+    });
+}
+
+function createEnemy(x, speed) {
+    const enemy = document.createElement('div');
+    enemy.classList.add('enemy');
+    enemy.style.left = x + 'px';
+    game.appendChild(enemy);
+
+    enemies.push({
+        el: enemy,
+        x,
+        dir: -1,
+        speed
+    });
+}
+
+function updateMario() {
+    if (keys.left) marioX -= 6;
+    if (keys.right) marioX += 6;
+
+    velocityY -= gravity;
+    marioY += velocityY;
+
+    if (marioY <= 100) {
+        marioY = 100;
+        velocityY = 0;
+        jumping = false;
+    }
+
+    mario.style.left = marioX + 'px';
+    mario.style.bottom = marioY + 'px';
+
+    checkCoins();
+    checkEnemies();
+}
+
+function checkCoins() {
+    let collectedCount = 0;
+
+    coins.forEach(c => {
+        if (c.collected) {
+            collectedCount++;
+            return;
+        }
+
+        const dx = marioX - c.x;
+        const dy = marioY - c.y;
+
+        if (Math.abs(dx) < 40 && Math.abs(dy) < 40) {
+            c.collected = true;
+            c.el.remove();
+            score += 10;
+            collectedCount++;
+        }
+    });
+
+    scoreboard.innerHTML = `Level: ${level + 1} | Score: ${score}`;
+
+    if (collectedCount === coins.length) {
+        nextLevel();
+    }
+}
+
+function checkEnemies() {
+    enemies.forEach(e => {
+        e.x += e.dir * e.speed;
+
+        if (e.x < 300 || e.x > 1500) {
+            e.dir *= -1;
+        }
+
+        e.el.style.left = e.x + 'px';
+
+        const dx = marioX - e.x;
+        const dy = marioY - 100;
+
+        if (Math.abs(dx) < 40 && Math.abs(dy) < 40) {
+            loseGame();
+        }
+    });
+}
+
+function nextLevel() {
+    level++;
+
+    if (level >= levelConfigs.length) {
+        winGame();
+        return;
+    }
+
+    marioX = 100;
+    marioY = 100;
+
+    loadLevel(level);
+}
+
+function winGame() {
+    gameOver = true;
+    message.style.display = 'block';
+    message.innerHTML = '🏆 YOU FINISHED ALL LEVELS';
+}
+
+function loseGame() {
+    gameOver = true;
+    message.style.display = 'block';
+    message.innerHTML = '☠️ GAME OVER';
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowLeft') keys.left = true;
+    if (e.code === 'ArrowRight') keys.right = true;
+
+    if (e.code === 'Space' && !jumping) {
+        velocityY = 15;
+        jumping = true;
+    }
+});
+
+window.addEventListener('keyup', (e) => {
+    if (e.code === 'ArrowLeft') keys.left = false;
+    if (e.code === 'ArrowRight') keys.right = false;
+});
+
+function gameLoop() {
+    if (!gameOver) {
+        updateMario();
+        requestAnimationFrame(gameLoop);
+    }
+}
+
+loadLevel(level);
+gameLoop();
